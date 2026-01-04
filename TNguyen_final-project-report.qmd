@@ -1,0 +1,143 @@
+---
+title: "Unity to Unrest: A LDA analysis on George W. Bush's speeches"
+subtitle: "Final Project Report"
+author: "Trang Nguyen"
+date: today
+format: pdf
+editor: visual
+---
+
+```{r}
+#| include: false #this is the only chunk you can "hide" in any way
+
+library(kableExtra)
+library(tidyverse)
+
+# add other packages here
+```
+
+# Introduction
+
+<!--  What is this about? - Do not assume your readers have any specific knowledge of your subject matter! For example, if your project involves phylogenetic trees, you should assume your audience has only a very simple understanding of genetics. -->
+
+<!-- Why should anyone care about this? Share your motivations. You may reference external sources (properly cited) to help motivate the topic. -->
+
+George W. Bush’s presidency is remembered not only for its major national and international events, but also for the dramatic rise and fall of his public support. At the start of his presidency, Bush held approval ratings that were historically high—peaking near 90% in the aftermath of the September 11th attacks, the highest presidential approval ratings ever recorded. (Moore, 2001) This surge reflected a moment of national unity, as Americans rallied behind the president’s leadership during a period of profound crisis.
+
+However, Bush’s approval ratings were also remarkably volatile. After the initial surge, public confidence gradually eroded during his time in office. In his second term, approval dropped sharply as Americans grew increasingly skeptical of the administration’s handling of the Iraq War and broader concerns about foreign policy and domestic governance. By the end of his presidency, Bush’s ratings had declined to around 25–30%, marking one of the steepest approval declines in modern presidential history.
+
+![George W. Bush's Approval Rating Graph from Shiny App](images/clipboard-2431868520.png)
+
+Presidential speeches are strategically crafted to shape public perception, justify policy decisions, and reinforce particular narratives of leadership. While there is no definitive evidence that changes in rhetoric either cause or result from declines in public approval, existing literature suggests that winning back public sentiment is often difficult once trust begins to erode (Olds, 2013). Nevertheless, analyzing presidential speeches remains valuable for observing how leaders adapt their communicative strategies under varying political conditions. This paper extends existing research on political rhetoric by applying Latent Dirichlet Allocation (LDA), a machine learning topic-modeling technique, to analyze thematic patterns in George W. Bush’s speeches before and after a pivotal shift in public opinion. The “pivot point” in this study is defined as the period when Bush’s disapproval rating surpassed his approval rating, marking a decline in public confidence and the onset of heightened scrutiny of presidential communication. Specifically, the project examines the dominant topics emphasized during periods of high versus low approval, and whether notable changes in tone or focus emerge as public sentiment becomes more negative. By analyzing how presidential rhetoric evolves alongside shifts in public opinion, this study seeks to deepen our understanding of adaptive communication strategies and the role of narrative in sustaining presidential influence.
+
+# Data
+
+<!-- What are the data? - What was the source of the data (who collected it, when, in what way, and why)? Provide appropriate citation. What kind of data was it? Is there a link to the data or some other way for the reader to follow up on your work? You need to reference your wrangling file here if you used one, in addition to providing these details. -->
+
+This project uses two primary sources of data: presidential public approval ratings and presidential speech transcripts.
+
+The public approval data originate from surveys historically conducted by George Gallup and the Gallup Organization, which have measured public support for U.S. presidents since the 1930s by asking respondents whether they approve or disapprove of the way the president is handling the job (Gallup, n.d.). For this study, the specific approval ratings for President George W. Bush were obtained from the American Presidency Project, a database curated by Woolley and Peters at the University of California, Santa Barbara (American Presidency Project, n.d.). The dataset consists of approval percentages paired with corresponding dates, forming a time-series that allows for the visualization and analysis of changes in public sentiment throughout Bush’s presidency.
+
+The second dataset consists of presidential speech transcripts collected from the Miller Center at the University of Virginia, a nonpartisan institution dedicated to the study of the American presidency (Miller Center, n.d.). The Miller Center maintains an extensive digital archive of presidential speeches. From this archive, I selected a corpus of speeches delivered by George W. Bush. The collection includes his annual State of the Union addresses, which summarize major policy goals for each year, as well as key speeches delivered during moments of national crisis, such as those following the September 11, 2001 attacks. These speeches were selected to examine how presidential rhetoric may reflect or influence shifts in public opinion. All speeches are text-based data.
+
+The complete data-cleaning and preparation process was carried out in a separate Quarto document titled [Data Wrangling.qmd](Data%20Wrangling.qmd). This file includes the steps used to remove stopwords, punctuation, and symbols from the speech transcripts, extract and standardize speech dates, and prepare the approval dataset for analysis. After cleaning, the speech data were divided into two segments based on a defined pivot point to support comparative analysis before and after a major contextual shift. The wrangling file provides a reproducible record of all procedures used to prepare the data for the study.
+
+# Methods
+
+<!-- What methods did you use? In what way did you *go beyond*? - What new method/analysis, etc. did you explore? You will need to describe the way in which you *went beyond*. This should include references to new R packages for analysis, citations of textbooks, blogs, or external sources, etc. You don't need to give us a major expository review of your *beyond* topic (no derivations, proofs, or anything of the sort), but give the reader a sense of it (what is it and where would they use it), and references for where they could go explore it more. -->
+
+This project employs a combination of text-analysis techniques and statistical modeling, with a primary focus on using Latent Dirichlet Allocation (LDA) as the “go beyond” component of the analysis. LDA is a generative probabilistic model for collections of discrete data, most commonly used to identify underlying themes by grouping words that frequently appear together in text (Blei, Ng, & Jordan, 2003). LDA works by assuming that every document have hidden topics. The model looks at all the words across all documents and tries to figure out what these topics are and the frequency each topic talks about them. This method is widely used in natural language processing, political communication, and computational social science.
+
+To carry out the analysis in R, I have used multiple new packages. The quanteda package (Benoit et al., 2018) was used to build the corpus, tokenize text, and construct document-feature matrices. These functions help me preprocess the data before putting it in the LDA model. The textstem package (Rinker, 2018) was used for lemmatization, reducing words to their base or dictionary form. This helps avoid words coming from the same base be treated as different words, which decreases the accuracy of the analysis. The topicmodels package (Grün & Hornik, 2011) was used to estimate the LDA model and extract topic distributions across both documents and terms. The text analysis process was carried in a separate document titled [LDA.qmd](LDA.qmd).
+
+For this project, I selected four topics as an exploratory choice. This number was not optimized using model-selection metrics. Instead, it was chosen to generate a manageable set of themes that could be meaningfully examined in relation to George W. Bush’s presidency. Inspecting the top words for each topic allowed me to infer the dominant themes and assess how they align with major events, policy priorities, and shifts in public approval.
+
+# Results / Discussion
+
+<!-- What are your findings? - What kind of statistical computations (if any) have you done to support those conclusions? (Again, even if you display code showing how some of the calculations were performed, it is up to you to interpret, in simple terms, the results of these calculations.) Do not forget about units, axis labels, graph titles, etc. -->
+
+To examine changes in George W.Bush's rhetorical emphasis over time, we estimated a topic model on presidential speeches and divided the corpus into pre-pivot and post-pivot periods.
+
+For each topic, we extracted top 10 words per topic, ranked by their topic-specific world probability (beta). The x-axis in Figure 2 and Figure 3 reports these β values, which indicate the probability that a given word appears in a particular topic. Higher β values therefore represent words that are more central to the topic's semantic content.
+
+**Pre-Pivot Topics**
+
+Before the pivot point, the model identifies four distinct but thematically related topics.
+
+![Pre-Pivot Graph of Top 10 Words in Each Topic](images/clipboard-1445465402.png){fig-align="center"}
+
+First, Topic 1 is dominated by abstract national and presidential language ("world", "president", "people", "country", "nation"). These terms suggest a general leadership and unity theme, rather than a focus on specific policies.
+
+Second, Topic 2 emphasizes domestic governance, with prominent terms such as "worker", "child", "tax" and "health". These words have moderately high β, indicating a consistent focus on internal economic and social policy concerns.
+
+Third, Topic 3 is oriented toward national security and terrorism, as indicated by the appearance of "terrorist". Coupled with the presence of temporally anchored language ("tonight") suggests that this topic captures crisis-oriented addresses.
+
+Finally, similar to Topic 3, topic 4 also centers around national security rhetoric with “weapon” and “security” point directly to defense and safety concerns.
+
+**Post-Pivot Topics**
+
+After the pivot point, the topical structure shifts in both content and rhetorical style.
+
+![Post-Pivot Graph of Top 10 Words in Each Topic](images/clipboard-884789737.png)
+
+Topic 1 is marked by a striking increase in conversational and verb-oriented language, including "know", "go", "get", "say" and "like". These words also display higher β values than those observed in pre-pivot topics, indicating a stronger concentration of informal speech patterns. This suggests a rhetorical move toward personalized persuasion and a less ceremonial presidential voice.
+
+Topic 2 introduces "Iraq" and "Congress" as salient terms, alongside "terrorist". These words indicate an emphasis on the justification of the ongoing military engagement.
+
+Topic 3 continues the use of national identity language such as "america", "nation" and "world" but incorporates "freedom" as a central term. This shift reflects the collapse of the original security-based justification for the Iraq War and the subsequent rhetorical pivot toward framing the conflict as a moral project centered on the promotion of freedom.
+
+Topic 4 represents the most substantive departure from the pre-pivot period. Dominated by "market", "free", "economy", "system" and "develop", this topic reflects a clear shift toward economic ideology and global development.
+
+**Discussion**
+
+Comparing the two periods reveals a clear transformation in rhetorical style of the presidential speech. Pre-pivot topics are dominated by abstract, institutional language associated with authority and state power. This vocabulary reflects a predominantly authoritative mode of communication, in which the president speaks from a position of institutional certainty during a period framed as exceptional crisis.
+
+In contrast, post-pivot Topic 1 is characterized by a noticeable increase in conversational and interpersonal language, including verbs such "know", "go", "get", "say", "like". The prominence of these terms suggests a shift toward a more humanized communicative style, emphasizing persuasion and personal credibility rather than command or directive authority.
+
+Importantly, this stylistic shift coincides with substantive reframing. As a the original threat-based justification for the Iraq War collapsed, authoritative crisis rhetoric became less viable. This administration increasingly relied on normative appeals. Nevertheless, the topics and word choices did not indicate a shift toward more negative forms of communication.
+
+Finally, the results suggest that changes in presidential communication may be understood as an adaptive response to declining public approval. As approval levels fell and disapproval surpassed approval, the rhetorical environment shifted from one of relative authority to one requiring greater persuasion.
+
+# Conclusion
+
+<!-- Summarize what you found. Then, what are the limitations of your work? - Be clear so that others do not misinterpret your findings. To what population do your results apply? Do they generalize? Could your work be extended with more data or computational power or time to analyze? How could your study be improved? Suggesting plausible extensions doesn't weaken your work; it strengthens it by connecting it to future work. -->
+
+This study analyzed changes in George W. Bush’s presidential rhetoric using topic modeling, with speeches divided into pre- and post-pivot periods defined by the point at which public disapproval exceeded public approval. The results indicate that both the content and style of presidential communication shifted following this decline in public support. Earlier rhetoric was characterized by more authoritative and institutional language, while later rhetoric increasingly adopted a more conversational, human-centered style.
+
+These findings suggest that changes in communication may reflect an adaptive response to declining approval, as presidential authority becomes more contested and messaging shifts toward persuasion and appeasement rather than directive leadership.
+
+Several limitations should be acknowledged. Topic models capture patterns of word usage and co-occurrence rather than speaker intent or audience interpretation. Topic labeling involves interpretive judgment and alternative readings are possible. Finally, the analysis is limited to formal presidential speeches and does not include other communication channels that may exhibit different stylistic patterns. Future research can do a comparative studies across presidents to test whether similar stylistic shifts emerge under declining approval. Analyzing presidential speeches and rhetorical styles through topic modeling can provide insights into patterns of leadership and political communication.
+
+By anchoring rhetorical change to shifts in public approval rather than specific events, this study highlights how presidential communication adapts as legitimacy declines, moving from authoritative discourse toward more human-centered and persuasive rhetoric.
+
+# References
+
+<!-- What are your references? - It's been mentioned above that you should be citing things. Thus, you should have a references (or bibliography) section, usually after the conclusion. The data sources must be listed here (and in your wrangling files too), as well as any external sources used. You could have sources for your chosen topic, such as a text analysis textbook. You should also cite any R packages that were not introduced in class materials. This doesn't replace in-line citation that should also be occurring when you use these references. For example, in the report, you could use (Author, Year) when pulling from a particular reference, and then be sure the complete reference is in the bibliography at the end. -->
+
+**Data set**
+
+American Presidency Project. (n.d.). George W. Bush public approval. University of California, Santa Barbara. <https://www.presidency.ucsb.edu/statistics/data/george-w-bush-public-approval>
+
+Miller Center. (n.d.). *Presidential Speeches Collection*. University of Virginia. Retrieved from <https://millercenter.org/the-presidency/presidential-speeches>
+
+**Other references**
+
+Benoit et al., (2018). quanteda: An R package for the quantitative analysis of textual data. Journal of Open Source Software, 3(30), 774, <https://doi.org/10.21105/joss.00774>
+
+Blei, D. M., Ng, A. Y., & Jordan, M. I. (2003). *Latent Dirichlet Allocation*. Journal of Machine Learning Research, 3, 993–1022. [https://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf](https://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf?utm_source=chatgpt.com)
+
+Gallup. (n.d.). George Gallup. <https://www.gallup.com/corporate/178136/george-gallup.aspx>
+
+Grün, B., & Hornik, K. (2011). topicmodels: An R Package for Fitting Topic Models. *Journal of Statistical Software*, *40*(13), 1–30. <https://doi.org/10.18637/jss.v040.i13>
+
+Miller Center. (n.d.). About the Miller Center. University of Virginia. <https://millercenter.org/about>
+
+Moore, D. W. (2001). Bush job approval highest in Gallup history. Gallup News Service. <https://news.gallup.com/poll/4924/bush-job-approval-highest-gallup-history.aspx>
+
+Olds, C. (2013). *Presidential moral rhetoric and the public’s policy mood*. White House Studies, 12, 383–409.
+
+Rinker, T. W. (2018). *textstem: Tools for stemming and lemmatizing text* (R package version). <https://doi.org/10.32614/CRAN.package.textstem>
+
+Wikipedia contributors. (2024). United States presidential approval rating. In *Wikipedia*. <https://en.wikipedia.org/wiki/United_States_presidential_approval_rating>
+
+Woolley, J. T., & Peters, G. (n.d.). *The American Presidency Project*. University of California, Santa Barbara. Retrieved from <https://www.presidency.ucsb.edu/>

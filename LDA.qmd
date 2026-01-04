@@ -1,0 +1,202 @@
+---
+title: "Text analysis using LDA"
+format: html
+editor: visual
+---
+
+## Exploring LDA
+
+1.  Preparing the Data
+
+```{r}
+library(topicmodels)
+library(wordcloud)
+library(broom)
+library(dplyr)
+library(tidytext)
+library(ggplot2)
+library(textstem)
+library(quanteda) 
+```
+
+```{r}
+
+speech <- readRDS("SpeechData.rds")
+
+pivot_date <- as.Date("04-20-2005", format = "%m-%d-%Y")
+speech_before <- speech |> filter(date < pivot_date)
+speech_after <- speech |> filter(date > pivot_date)
+
+```
+
+### Before pivot point
+
+```{r}
+#convert the raw text to corpus
+speech_cor_before <- corpus(speech_before) 
+#split the speeches into paragraphs as documents
+corp_parag_before <- corpus_reshape(speech_cor_before, to = "paragraphs") 
+#convert into token objects and remove the redundancies
+toks_before <- quanteda::tokens(
+  corp_parag_before,
+  remove_punct = TRUE,
+  remove_numbers = TRUE,
+  remove_symbols = TRUE,
+  remove_separators = TRUE
+)
+toks_before <- tokens_remove(toks_before, pattern = stopwords("english"))
+
+custom_words_to_remove <- c("much", "can", "many", "just", 
+                            "must", "Mr", "As", "of", "The", "every")
+toks_before <- tokens_remove(toks_before, pattern = custom_words_to_remove)
+
+
+# Convert tokens to a list of words
+toks_list <- as.list(toks_before)  # converts to list of character vectors
+
+# Lemmatize each token list
+toks_lemma_list <- lapply(toks_list, lemmatize_words)
+
+# Convert back to tokens
+toks_before_lemma <- quanteda::tokens(toks_lemma_list)
+
+#create document feature matrix
+#row: documents, columns: topics, value: how frequent the topics appear
+dfm_b <- toks_before_lemma |> 
+  dfm() |>
+  dfm_remove(pattern = stopwords("english"))
+#remove words that are less than 5 (reduce the noise)
+dfm_b <- dfm_trim(dfm_b, min_docfreq = 5)
+
+#convert into a format that we can feed into LDA
+dtm_b <- convert(dfm_b, to = "topicmodels")
+
+```
+
+```{r}
+set.seed(1)
+#LDA is a probabilistic model so the result is always different. Hence, we have to set seeds
+#k: specify the number of topics
+m_before <- LDA(dtm_b, k = 4, control = list(seed = 123))
+m_before
+```
+
+```{r}
+chapter_topics_before <- tidy(m_before, matrix = "beta")
+chapter_topics_before
+
+top_terms_before <- chapter_topics_before |> 
+  group_by(topic) |> 
+  slice_max(beta, n = 10,
+            with_ties = FALSE) |> 
+  ungroup() |> 
+  arrange(topic, -beta)
+
+top_terms_before
+
+
+before_graph <- top_terms_before |> 
+  mutate(term = reorder_within(term, beta, topic)) |> 
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered() +
+  labs(
+    title = "Before pivot point: Top 10 words for each topic",
+    x = "Probability of the word in the specific topic (Beta)",
+    y = "Word (Term)"
+  )
+before_graph
+
+ggsave(before_graph,
+       file = "before_graph.png",
+       device = "png")
+
+```
+
+### After pivot point
+
+```{r}
+speech_cor_after <- corpus(speech_after) #convert to corpus 
+corp_parag_after <- corpus_reshape(speech_cor_after, to = "paragraphs")
+#dfm: document feature matrix
+toks_after <- quanteda::tokens(corp_parag_after,
+               remove_punct = TRUE,
+               remove_numbers = TRUE,
+               remove_symbols = TRUE,
+               remove_separators = TRUE)
+
+toks_after <- tokens_remove(toks_after, pattern = stopwords("english"))
+custom_words_to_remove <- c("much", "can", "many", "just", 
+                            "must", "Mr", "As", "of", "two")
+
+toks_after <- tokens_remove(toks_after, pattern = custom_words_to_remove)
+
+toks_list <- as.list(toks_after)  # converts to list of character vectors
+
+
+# Lemmatize each token list
+toks_lemma_list <- lapply(toks_list, lemmatize_words)
+
+# Convert back to tokens
+toks_after_lemma <- quanteda::tokens(toks_lemma_list)
+
+dfm_a <- toks_after_lemma |> 
+  dfm() |>
+  dfm_remove(pattern = stopwords("english"))
+#remove words that are less than 5
+dfm_a <- dfm_trim(dfm_a, min_docfreq = 5)
+
+dtm_a <- convert(dfm_a, to = "topicmodels")
+```
+
+```{r}
+set.seed(2)
+#LDA is a probabilistic model so the result is always different. Hence, we have to set seeds
+#k: specify the number of topics
+m_a <- LDA(dtm_a, k = 4, control = list(seed = 123))
+m_a
+```
+
+```{r}
+chapter_topics_after <- tidy(m_a, matrix = "beta")
+chapter_topics_after
+```
+
+```{r}
+top_terms_after <- chapter_topics_after %>%
+  group_by(topic) %>%
+  slice_max(beta, n = 10) %>% 
+  ungroup() %>%
+  arrange(topic, -beta)
+
+top_terms_after
+```
+
+```{r}
+after_graph <- top_terms_after |> 
+  mutate(term = reorder_within(term, beta, topic)) |> 
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered() +
+  labs(
+    title = "After pivot point: Top 10 words for each topic",
+    x = "Probability of the word in the specific topic (Beta)",
+    y = "Word (Term)"
+  )
+
+after_graph
+
+ggsave(before_graph,
+       file = "before_graph.png",
+       device = "png")
+```
+
+**For Shiny App**
+
+```{r}
+saveRDS(top_terms_before, "FinalProject/top_terms_before.rds")
+saveRDS(top_terms_after, "FinalProject/top_terms_after.rds")
+
+```
